@@ -73,6 +73,9 @@ def build_superfunctional(name, restricted, npoints=None, deriv=1):
     else:
         raise ValidationError("SCF: Functional (%s) not found!" % name)
 
+    from ... import sanitizer as _san  # scientific sanitizer hook (observation only; no-op unless PSI4_SANITIZE_LOG)
+    _san.functional_checks(name if isinstance(name, dict) else dft_builder.functionals.get(str(name).lower(), {}))
+
     # Lock and unlock the functional
     sup[0].set_lock(False)
 

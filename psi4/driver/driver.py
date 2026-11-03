@@ -531,6 +531,8 @@ def energy(name, **kwargs):
     logger.info(f"Compute energy(): method={lowername}, basis={core.get_global_option('BASIS').lower()}, molecule={molecule.name()}, nre={'w/EFP' if hasattr(molecule, 'EFP') else molecule.nuclear_repulsion_energy()}")
     logger.debug("w/EFP" if hasattr(molecule, "EFP") else pp.pformat(molecule.to_dict(quiet=kwargs.get("quiet", True))))
     wfn = procedures['energy'][lowername](lowername, molecule=molecule, **kwargs)
+    from . import sanitizer as _san  # scientific sanitizer hook (observation only; no-op unless PSI4_SANITIZE_LOG)
+    _san.energy_checks(lowername, wfn)
     logger.info(f"Return energy(): {core.variable('CURRENT ENERGY')}")
 
     for postcallback in hooks['energy']['post']:
@@ -644,6 +646,8 @@ def gradient(name, **kwargs):
     logger.info(f"Compute gradient(): method={lowername}, basis={core.get_global_option('BASIS').lower()}, molecule={molecule.name()}, nre={'w/EFP' if hasattr(molecule, 'EFP') else molecule.nuclear_repulsion_energy()}")
     logger.debug("w/EFP" if hasattr(molecule, "EFP") else pp.pformat(molecule.to_dict(quiet=kwargs.get("quiet", True))))
     wfn = procedures['gradient'][lowername](lowername, molecule=molecule, **kwargs)
+    from . import sanitizer as _san  # scientific sanitizer hook (observation only; no-op unless PSI4_SANITIZE_LOG)
+    _san.gradient_checks(wfn, molecule)
     logger.info(f"Return gradient(): {core.variable('CURRENT ENERGY')}")
     logger.info(nppp(wfn.gradient().np))
 
@@ -1490,6 +1494,8 @@ def hessian(name, **kwargs):
     logger.info(nppp(wfn.hessian().np))
 
     wfn.set_gradient(G0)
+    from . import sanitizer as _san  # scientific sanitizer hook (observation only; no-op unless PSI4_SANITIZE_LOG)
+    _san.hessian_checks(wfn, molecule)
     basisstash.restore()
     optstash.restore()
     optstash_conv.restore()
@@ -1702,6 +1708,9 @@ def vibanal_wfn(
 
     m = np.asarray([mol.mass(at) for at in range(mol.natom())])
     irrep_labels = mol.irrep_labels()
+
+    from . import sanitizer as _san  # scientific sanitizer hook (observation only; no-op unless PSI4_SANITIZE_LOG)
+    _san.molecule_checks(mol)
 
     vibinfo, vibtext = qcdb.vib.harmonic_analysis(nmwhess,
                                                   geom,

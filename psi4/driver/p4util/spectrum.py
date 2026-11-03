@@ -392,5 +392,7 @@ def spectrum(*,
 
     # Generate sticks
     sticks = prefactor * np.array([p * transform_residue(r) * shape.maximum(p) for p, r in zip(poles, residues)])
+    from .. import sanitizer as _san  # scientific sanitizer hook (observation only; no-op unless PSI4_SANITIZE_LOG)
+    _san.lineshape_check(type(shape), None, gammas[out_units], poles[:3])
 
     return {"convolution": {"x": x, "y": y}, "sticks": {"poles": poles, "residues": sticks}}

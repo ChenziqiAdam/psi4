@@ -44,6 +44,32 @@ _zeta_val2sym = {k + 2: v for k, v in enumerate('dtq5678')}
 Extrapolatable = Union[float, core.Matrix, core.Vector]
 
 
+def _sanitize_xtpl(kind, default_alpha=None):
+    """Scientific sanitizer hook (observation only; no-op unless PSI4_SANITIZE_LOG)."""
+    import functools
+    import inspect
+
+    def decorate(fn):
+        sig = inspect.signature(fn)
+
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            value = fn(*args, **kwargs)
+            from . import sanitizer as _san
+            b = sig.bind(*args, **kwargs).arguments
+            if kind == "helgaker3":
+                _san.cbs_check(kind, (b["zLO"], b["zMD"], b["zHI"]), (b["valueLO"], b["valueMD"], b["valueHI"]), value)
+            else:
+                alpha = b.get("alpha")
+                _san.cbs_check(kind, (b["zLO"], b["zHI"]), (b["valueLO"], b["valueHI"]), value,
+                               default_alpha if alpha is None else alpha)
+            return value
+
+        return wrapper
+
+    return decorate
+
+
 def xtpl_highest_1(functionname: str, zHI: int, valueHI: Extrapolatable, verbose: int = 1, **kwargs) -> Extrapolatable:
     r"""Scheme for total or correlation energies with a single basis or the highest
     zeta-level among an array of bases. Used by :py:func:`~psi4.driver.cbs`.
@@ -100,6 +126,7 @@ def xtpl_highest_1(functionname: str, zHI: int, valueHI: Extrapolatable, verbose
         return valueHI
 
 
+@_sanitize_xtpl('helgaker2', 1.63)
 def scf_xtpl_helgaker_2(functionname: str, zLO: int, valueLO: Extrapolatable, zHI: int, valueHI: Extrapolatable, verbose: int = 1, alpha: Optional[float] = None) -> Extrapolatable:
     r"""Extrapolation scheme using exponential form for reference energies with two adjacent
     zeta-level bases. Used by :py:func:`~psi4.driver.cbs`.
@@ -208,6 +235,7 @@ def scf_xtpl_helgaker_2(functionname: str, zLO: int, valueLO: Extrapolatable, zH
         raise ValidationError(f"scf_xtpl_helgaker_2: datatype is not recognized '{type(valueLO)}'.")
 
 
+@_sanitize_xtpl('truhlar2', 3.4)
 def scf_xtpl_truhlar_2(functionname: str, zLO: int, valueLO: Extrapolatable, zHI: int, valueHI: Extrapolatable, verbose: int = 1, alpha: Optional[float] = None) -> Extrapolatable:
     r"""Extrapolation scheme using power form for reference energies with two adjacent
     zeta-level bases. Used by :py:func:`~psi4.driver.cbs`.
@@ -311,6 +339,7 @@ def scf_xtpl_truhlar_2(functionname: str, zLO: int, valueLO: Extrapolatable, zHI
         raise ValidationError(f"scf_xtpl_truhlar_2: datatype is not recognized '{type(valueLO)}'.")
 
 
+@_sanitize_xtpl('karton2', 6.3)
 def scf_xtpl_karton_2(functionname: str, zLO: int, valueLO: Extrapolatable, zHI: int, valueHI: Extrapolatable, verbose: int = 1, alpha: Optional[float] = None) -> Extrapolatable:
     r"""Extrapolation scheme using root-power form for reference energies with two adjacent
     zeta-level bases. Used by :py:func:`~psi4.driver.cbs`.
@@ -416,6 +445,7 @@ def scf_xtpl_karton_2(functionname: str, zLO: int, valueLO: Extrapolatable, zHI:
         raise ValidationError(f"scf_xtpl_Karton_2: datatype is not recognized '{type(valueLO)}'.")
 
 
+@_sanitize_xtpl('helgaker3', None)
 def scf_xtpl_helgaker_3(functionname: str, zLO: int, valueLO: Extrapolatable, zMD: int, valueMD: Extrapolatable, zHI: int, valueHI: Extrapolatable, verbose: int = 1, alpha: Optional[float] = None) -> Extrapolatable:
     r"""Extrapolation scheme for reference energies with three adjacent zeta-level bases.
     Used by :py:func:`~psi4.driver.cbs`.
@@ -547,6 +577,7 @@ def scf_xtpl_helgaker_3(functionname: str, zLO: int, valueLO: Extrapolatable, zM
         raise ValidationError(f"scf_xtpl_helgaker_3: datatype is not recognized '{type(valueLO)}'.")
 
 
+@_sanitize_xtpl('corl2', 3.0)
 def corl_xtpl_helgaker_2(functionname: str, zLO: int, valueLO: Extrapolatable, zHI: int, valueHI: Extrapolatable, verbose: int = 1, alpha: Optional[float] = None) -> Extrapolatable:
     r"""Extrapolation scheme for correlation energies with two adjacent zeta-level bases.
     Used by :py:func:`~psi4.driver.cbs`.

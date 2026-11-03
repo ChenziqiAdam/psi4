@@ -2050,6 +2050,9 @@ def scf_helper(name, post_scf=True, **kwargs):
         for pv in ["SCF TOTAL ENERGY", "CURRENT ENERGY", "CURRENT REFERENCE ENERGY"]:
             obj.set_variable(pv, e_scf)
 
+    from .. import sanitizer as _san  # scientific sanitizer hook (observation only; no-op unless PSI4_SANITIZE_LOG)
+    _san.scf_checks(scf_wfn, e_scf)
+
     # We always would like to print a little property information
     if kwargs.get('scf_do_properties', True):
         oeprop = core.OEProp(scf_wfn)

@@ -430,3 +430,27 @@ class EmpiricalDispersion():
             wfn.set_variable('DISPERSION CORRECTION HESSIAN', H)
         optstash.restore()
         return core.Matrix.from_array(H)
+
+
+def _sanitized_compute_energy(_orig):
+    def compute_energy(self, molecule, wfn=None):
+        ene = _orig(self, molecule, wfn)
+        from .. import sanitizer as _san  # scientific sanitizer hook (observation only; no-op unless PSI4_SANITIZE_LOG)
+        _san.dispersion_energy_check(self, ene)
+        return ene
+    compute_energy.__doc__ = _orig.__doc__
+    return compute_energy
+
+
+def _sanitized_compute_gradient(_orig):
+    def compute_gradient(self, molecule, wfn=None):
+        grad = _orig(self, molecule, wfn)
+        from .. import sanitizer as _san  # scientific sanitizer hook (observation only; no-op unless PSI4_SANITIZE_LOG)
+        _san.dispersion_gradient_check(self, molecule, grad)
+        return grad
+    compute_gradient.__doc__ = _orig.__doc__
+    return compute_gradient
+
+
+EmpiricalDispersion.compute_energy = _sanitized_compute_energy(EmpiricalDispersion.compute_energy)
+EmpiricalDispersion.compute_gradient = _sanitized_compute_gradient(EmpiricalDispersion.compute_gradient)

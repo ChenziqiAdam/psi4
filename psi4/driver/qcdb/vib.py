@@ -634,6 +634,9 @@ def harmonic_analysis(hess: np.ndarray, geom: np.ndarray, mass: np.ndarray, basi
     vib_temperature_K = frequency_cm_1.real * uconv_K
     vibinfo['theta_vib'] = Datum('char temp', 'K', vib_temperature_K)
 
+    from .. import sanitizer as _san  # scientific sanitizer hook (observation only; no-op unless PSI4_SANITIZE_LOG)
+    _san.vib_checks(harmonic_analysis, vibinfo, hess, geom, mass, basisset, irrep_labels, project_trans, project_rot)
+
     return vibinfo, '\n'.join(text)
 
 
@@ -1095,6 +1098,10 @@ def thermo(vibinfo, T: float, P: float, multiplicity: int, molecular_mass: float
     text += """\n  Total G, Gibbs energy at {:7.2f} [K]                                               {:15.8f} [Eh]""".format(
         T, sm[('G', 'tot')])
     text += """\n  *** Absolute Gibbs energy, not a free energy of formation ***\n\n""" 
+
+    from .. import sanitizer as _san  # scientific sanitizer hook (observation only; no-op unless PSI4_SANITIZE_LOG)
+    _san.thermo_checks(thermo, filter_nonvib, constants, vibinfo, T, P, multiplicity, molecular_mass, E0, sigma,
+                       rot_const, rotor_type, therminfo)
 
     return therminfo, text
 
